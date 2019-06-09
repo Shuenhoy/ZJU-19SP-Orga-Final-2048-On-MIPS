@@ -5,6 +5,7 @@ main:
     update_gpu
 main_loop:
     button
+    beq     $v0, $zero, main_loop
     addi    $s0, $v0,   0
     jal     apply_merge
     add     $at, $at,   $s5
