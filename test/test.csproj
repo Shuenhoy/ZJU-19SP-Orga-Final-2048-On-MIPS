@@ -1,0 +1,21 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <ItemGroup>
+    <ProjectReference Include="..\src\MIPSSim.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="LanguageExt" Version="1.7.0" />
+    <PackageReference Include="LanguageExt.Parsec" Version="3.1.24" />
+    <PackageReference Include="xunit" Version="2.4.1" />
+       <PackageReference Include="xunit.runner.visualstudio" Version="2.2.0" />
+       <DotNetCliToolReference Include="dotnet-xunit" Version="2.3.1" />
+          <PackageReference Include="Microsoft.NET.Test.Sdk" Version="15.9.0" />
+
+  </ItemGroup>
+
+  <PropertyGroup>
+    <TargetFramework>netcoreapp2.2</TargetFramework>
+  </PropertyGroup>
+
+</Project>

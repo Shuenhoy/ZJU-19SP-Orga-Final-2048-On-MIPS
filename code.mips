@@ -1,0 +1,440 @@
+main:
+    jal     gen_num  # init
+    xor     $at, $at,   $at
+    jal     load_state_to_reg
+    update_gpu
+main_loop:
+    button
+    addi    $s0, $v0,   0
+    jal     apply_merge
+    add     $at, $at,   $s5
+    beq     $s6, $zero, main_loop
+    addi    $a0, $at,   0
+    update_score
+    jal     gen_num
+    jal     load_state_to_reg
+    update_gpu
+    j       main_loop
+
+
+
+#===========================
+# 
+# load_state_to_reg
+# Test: Pass
+#=============================
+
+load_state_to_reg:
+    addi $t0, $zero, 2048
+    xor  $a0, $a0, $a0
+    xor  $a1, $a1, $a1
+
+
+    lw   $t1, 0($t0)
+    or   $a0, $a0, $t1
+    sll  $a0, $a0, 4
+  
+    lw   $t1, 4($t0)
+    or   $a0, $a0, $t1
+    sll  $a0, $a0, 4
+  
+    lw   $t1, 8($t0)
+    or   $a0, $a0, $t1
+    sll  $a0, $a0, 4
+  
+    lw   $t1, 12($t0)
+    or   $a0, $a0, $t1
+    sll  $a0, $a0, 4
+  
+    lw   $t1, 16($t0)
+    or   $a0, $a0, $t1
+    sll  $a0, $a0, 4
+  
+    lw   $t1, 20($t0)
+    or   $a0, $a0, $t1
+    sll  $a0, $a0, 4
+  
+    lw   $t1, 24($t0)
+    or   $a0, $a0, $t1
+    sll  $a0, $a0, 4
+  
+    lw   $t1, 28($t0)
+    or   $a0, $a0, $t1
+  
+    #==  
+    lw   $t1, 32($t0)
+    or   $a1, $a1, $t1
+    sll  $a1, $a1, 4
+  
+    lw   $t1, 36($t0)
+    or   $a1, $a1, $t1
+    sll  $a1, $a1, 4
+      
+    lw   $t1, 40($t0)
+    or   $a1, $a1, $t1
+    sll  $a1, $a1, 4
+  
+    lw   $t1, 44($t0)
+    or   $a1, $a1, $t1
+    sll  $a1, $a1, 4
+  
+    lw   $t1, 48($t0)
+    or   $a1, $a1, $t1
+    sll  $a1, $a1, 4
+  
+    lw   $t1, 52($t0)
+    or   $a1, $a1, $t1
+    sll  $a1, $a1, 4
+  
+    lw   $t1, 56($t0)
+    or   $a1, $a1, $t1
+    sll  $a1, $a1, 4
+  
+    lw   $t1, 60($t0)
+    or   $a1, $a1, $t1
+    jr   $ra
+
+
+
+#===========================
+# 
+# gen_num
+#
+# Test: Pass
+#=============================
+gen_num:
+    addi   $t0, $zero, 2048 # 加载场景
+    addi   $t1, $t0,   64
+
+    xor    $t3, $t3,   $t3    # 计数
+gen_num_loop:
+    addi   $t1, $t1,   -4
+    lw     $t2, 0($t1)
+    bne    $t2, $zero, gen_num_loop_stop
+    addi   $t3, $t3,   1
+gen_num_loop_stop:
+    bne    $t1, $t0,   gen_num_loop
+
+    addi   $a0, $t3,   0
+    gen_random             # generate random -> $v0
+
+
+    addi   $t1, $t0,   64
+
+gen_num_loop2:
+    addi   $t1, $t1,   -4
+    lw     $t2, 0($t1)
+    bne    $t2, $zero, gen_num_loop2
+    beq    $v0, $zero, gen_num_loop2_stop
+    addi   $v0, $v0,   -1
+    j      gen_num_loop2
+gen_num_loop2_stop:
+    
+
+
+    gen_random
+    beq    $v0, $zero, gen_num_gen2
+    addi   $t2, $zero, 1
+    sw     $t2, 0($t1)
+    jr $ra
+gen_num_gen2:
+    addi   $t2, $zero, 2
+    sw     $t2, 0($t1)
+    jr $ra
+
+
+
+
+#======================
+# X+ 0 X+ 4 X+ 8 X+12  $a0
+# X+16 X+20 X+24 X+28  $a1
+# X+32 X+36 X+40 X+44  $a2
+# X+48 X+52 X+56 X+60  $a3
+#======================
+
+#=========================================
+# 函数 apply merge
+# 参数 $s0, 1234 上下左右四方向
+# 输出 $s5 分数, $s6 是否移动, $s7 是否出现2048 ，
+# Test: Pass
+#=========================================
+apply_merge:
+    addi $t9, $zero, 2048
+    sw   $ra, 0($sp)
+    xor $s5, $s5, $s5
+    xor $s6, $s6, $s6
+    xor $s7, $s7, $s7
+
+    addi  $t8, $zero, 1
+    beq   $s0, $t8,   apply_to_up
+    addi  $t8, $zero, 2
+    beq   $s0, $t8,   apply_to_down
+    addi  $t8, $zero, 3
+    beq   $s0, $t8,   apply_to_left
+    addi  $t8, $zero, 4
+    beq   $s0, $t8,   apply_to_right
+    jr    $ra                         # nothing to move
+apply_to_up:
+    addi $s0, $t9, 0
+    addi $s1, $t9, 16
+    addi $s2, $t9, 32
+    addi $s3, $t9, 48
+    jal merge
+    add  $s5, $s5, $s4
+
+    addi $s0, $t9, 4
+    addi $s1, $t9, 20
+    addi $s2, $t9, 36
+    addi $s3, $t9, 52
+    jal merge
+    add  $s5, $s5, $s4
+
+
+    addi $s0, $t9, 8
+    addi $s1, $t9, 24
+    addi $s2, $t9, 40
+    addi $s3, $t9, 56
+    jal merge
+    add  $s5, $s5, $s4
+
+    addi $s0, $t9, 12
+    addi $s1, $t9, 28
+    addi $s2, $t9, 44
+    addi $s3, $t9, 60
+    jal merge
+    add  $s5, $s5, $s4
+    lw   $ra, 0($sp)
+
+    jr  $ra
+
+
+apply_to_down:
+    addi $s0, $t9, 48
+    addi $s1, $t9, 32
+    addi $s2, $t9, 16
+    addi $s3, $t9, 0
+    jal merge
+    add  $s5, $s5, $s4
+
+    addi $s0, $t9, 52
+    addi $s1, $t9, 36
+    addi $s2, $t9, 20
+    addi $s3, $t9, 4
+    jal merge
+    add  $s5, $s5, $s4
+
+
+    addi $s0, $t9, 56
+    addi $s1, $t9, 40
+    addi $s2, $t9, 24
+    addi $s3, $t9, 8
+    jal merge
+    add  $s5, $s5, $s4
+
+    addi $s0, $t9, 60
+    addi $s1, $t9, 44
+    addi $s2, $t9, 28
+    addi $s3, $t9, 12
+    jal merge
+    add  $s5, $s5, $s4
+    lw   $ra, 0($sp)
+
+    jr  $ra
+
+
+apply_to_left:
+    addi $s0, $t9, 0
+    addi $s1, $t9, 4
+    addi $s2, $t9, 8
+    addi $s3, $t9, 12
+    jal merge
+    add  $s5, $s5, $s4
+
+    addi $s0, $t9, 16
+    addi $s1, $t9, 20
+    addi $s2, $t9, 24
+    addi $s3, $t9, 28
+    jal merge
+    add  $s5, $s5, $s4
+
+
+    addi $s0, $t9, 32
+    addi $s1, $t9, 36
+    addi $s2, $t9, 40
+    addi $s3, $t9, 44
+    jal merge
+    add  $s5, $s5, $s4
+
+    addi $s0, $t9, 48
+    addi $s1, $t9, 52
+    addi $s2, $t9, 56
+    addi $s3, $t9, 60
+    jal merge
+    add  $s5, $s5, $s4
+    lw   $ra, 0($sp)
+
+    jr  $ra
+
+
+apply_to_right:
+    addi $s0, $t9, 12
+    addi $s1, $t9, 8
+    addi $s2, $t9, 4
+    addi $s3, $t9, 0
+    jal merge
+    add  $s5, $s5, $s4
+
+    addi $s0, $t9, 28
+    addi $s1, $t9, 24
+    addi $s2, $t9, 20
+    addi $s3, $t9, 16
+    jal merge
+    add  $s5, $s5, $s4
+
+
+    addi $s0, $t9, 44
+    addi $s1, $t9, 40
+    addi $s2, $t9, 36
+    addi $s3, $t9, 32
+    jal merge
+    add  $s5, $s5, $s4
+
+    addi $s0, $t9, 60
+    addi $s1, $t9, 56
+    addi $s2, $t9, 52
+    addi $s3, $t9, 48
+    jal merge
+    add  $s5, $s5, $s4
+    lw   $ra, 0($sp)
+
+    jr  $ra
+# =========================================
+# 函数 Merge
+# [$s0] [$s1] [$s2] [$s3] 向左合并，原位输出
+# $s4 - 输出分数 s6 move; s7 win
+# 向左合并
+# Test: Pass
+# =========================================
+
+merge:
+
+    lw      $t0, 0($s0)
+    lw      $t1, 0($s1)
+    lw      $t2, 0($s2)
+    lw      $t3, 0($s3)
+
+    xor     $s4,   $s4,   $s4
+  
+
+merge_shift_t0:
+    bne     $t0, $zero,  merge_shift_t1
+    addi    $t0,   $t1,   0
+    addi    $t1,   $t2,   0
+    addi    $t2,   $t3,   0
+    addi    $t3,   $zero, 0
+
+    bne     $t0, $zero,  merge_shift_t1
+    addi    $t0,   $t1,   0
+    addi    $t1,   $t2,   0
+    addi    $t2,   $t3,   0
+    addi    $t3,   $zero, 0
+
+    bne     $t0, $zero,  merge_shift_t1
+    addi    $t0,   $t1,   0
+    addi    $t1,   $t2,   0
+    addi    $t2,   $t3,   0
+    addi    $t3,   $zero, 0
+
+merge_shift_t1:
+    bne     $t1, $zero,  merge_shift_t2
+    addi    $t1,   $t2,   0
+    addi    $t2,   $t3,   0
+    addi    $t3,   $zero, 0
+
+    bne     $t1, $zero,  merge_shift_t2
+    addi    $t1,   $t2,   0
+    addi    $t2,   $t3,   0
+    addi    $t3,   $zero, 0
+
+merge_shift_t2:
+    bne     $t2,   $zero,  merge_start
+    addi    $t2,   $t3,   0
+    addi    $t3,   $zero, 0
+
+merge_start:
+    
+    bne     $t0,   $t1,   merge_t1_t2
+    beq     $t0,   $zero, merge_return #if zero appeares it's done
+    addi    $t0,   $t1,   1
+    addi    $t1,   $t2,   0
+    addi    $t2,   $t3,   0
+    addi    $t3,   $zero, 0
+    
+    slti    $t4,   $t0,   11
+    xori    $t4,   $t4,   1
+    or      $s7,   $s7,   $t4          # update win
+
+
+    addi    $t5,   $zero, 1
+    sllv    $t5,   $t5,   $t0
+    add     $s4,   $s4,   $t5
+
+merge_t1_t2:
+    bne     $t1,   $t2,   merge_t2_t3
+    beq     $t1,   $zero, merge_return #if zero appeares it's done
+    addi    $t1,   $t2,   1
+    addi    $t2,   $t3,   0
+    addi    $t3,   $zero, 0 
+    ori     $s6,   $s6,   1
+
+    
+    slti    $t4,   $t1,   11
+    xori    $t4,   $t4,   1    
+    or      $s7,   $s7,   $t4          # update win
+
+    addi    $t5,   $zero, 1
+    sllv    $t5,   $t5,   $t1
+    add     $s4,   $s4,   $t5
+
+
+merge_t2_t3:
+    bne     $t2,   $t3,   merge_return
+    beq     $t2,   $zero, merge_return #if zero appeares it's done
+    addi    $t2,   $t3,   1
+    addi    $t3,   $zero, 0
+    ori     $s6,   $s6,   1
+
+    slti    $t4,   $t2,   11
+    xori    $t4,   $t4,   1    
+    or      $s7,   $s7,   $t4          # update win
+
+    addi    $t5,   $zero, 1
+    sllv    $t5,   $t5,   $t2
+    add     $s4,   $s4,   $t5
+
+merge_return:
+    lw      $t4,   0($s0)
+    lw      $t5,   0($s1)
+    lw      $t6,   0($s2)
+    lw      $t7,   0($s3)
+
+    beq     $t0,   $t4,  merge_same2
+    ori     $s6,   $s6,  1
+    j       merge_write_back
+merge_same2:
+    beq     $t1,   $t5,  merge_same3
+    ori     $s6,   $s6,  1
+    j       merge_write_back
+merge_same3:
+    beq     $t2,   $t6,  merge_same4
+    ori     $s6,   $s6,  1
+    j       merge_write_back
+merge_same4:
+    beq     $t3,   $t7,  merge_write_back
+    ori     $s6,   $s6,  1
+merge_write_back:
+    sw      $t0,   0($s0)
+    sw      $t1,   0($s1)
+    sw      $t2,   0($s2)
+    sw      $t3,   0($s3)
+    jr      $ra
