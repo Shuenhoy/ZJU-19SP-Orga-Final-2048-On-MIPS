@@ -1,5 +1,5 @@
 main:
-    jal     gen_num  # init
+    jal     gen_num  # init #0
     xor     $at, $at,   $at
     jal     load_state_to_reg
     update_gpu
@@ -103,7 +103,7 @@ load_state_to_reg:
 #
 # Test: Pass
 #=============================
-gen_num:
+gen_num: #64
     addi   $t0, $zero, 2048 # 加载场景
     addi   $t1, $t0,   64
 

@@ -34,10 +34,10 @@ namespace MIPSSim.ASM
             {"jal",         0x03},
             {"lw",          0x23},
             {"sw",          0x2b},
-            {"update_gpu",  0x07}, // custom
-            {"update_score",0x08}, // custom
-            {"button",      0x09},  // custom
-            {"gen_random",      0x0c}  // custom
+            {"update_gpu",  48}, // custom
+            {"update_score",49}, // custom
+            {"button",      50},  // custom
+            {"gen_random",   51}  // custom
 
         };
         static uint RInst(int RS, int RT, int RD, int Shamt, int Func)
@@ -78,9 +78,12 @@ namespace MIPSSim.ASM
             switch (inst)
             {
                 case IInstruction i:
-                    return IInst(opCode[i.Key], i.RS, i.RT, (int)i.Imm);
+                    if(i.Key=="beq" || i.Key=="bne")
+                        return IInst(opCode[i.Key], i.RS, i.RT, ((int)i.Imm)>>2);
+                    else
+                        return IInst(opCode[i.Key], i.RS, i.RT, (int)i.Imm);
                 case JInstruction j:
-                    return JInst(opCode[j.Key], j.ITarget);
+                    return JInst(opCode[j.Key], j.ITarget>>2);
                 case RInstruction r:
                     return RInst(r.RS, r.RT, r.RD, r.Shamt, func[r.Key]);
                 case SInstruction s:
